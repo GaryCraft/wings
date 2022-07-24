@@ -27,12 +27,12 @@ type Filesystem struct {
 	mu                sync.RWMutex
 	lastLookupTime    *usageLookupTime
 	lookupInProgress  *system.AtomicBool
-	diskUsed          int64
+	diskUsed          int32
 	diskCheckInterval time.Duration
 	denylist          *ignore.GitIgnore
 
 	// The maximum amount of disk space (in bytes) that this Filesystem instance can use.
-	diskLimit int64
+	diskLimit int32
 
 	// The root data directory path for this Filesystem instance.
 	root string
@@ -41,7 +41,7 @@ type Filesystem struct {
 }
 
 // New creates a new Filesystem instance for a given server.
-func New(root string, size int64, denylist []string) *Filesystem {
+func New(root string, size int32, denylist []string) *Filesystem {
 	return &Filesystem{
 		root:              root,
 		diskLimit:         size,
@@ -141,7 +141,7 @@ func (fs *Filesystem) Writefile(p string, r io.Reader) error {
 	// Check that the new size we're writing to the disk can fit. If there is currently
 	// a file we'll subtract that current file size from the size of the buffer to determine
 	// the amount of new data we're writing (or amount we're removing if smaller).
-	if err := fs.HasSpaceFor(int64(br.Size()) - currentSize); err != nil {
+	if err := fs.HasSpaceFor(int32(br.Size()) - int32(currentSize)); err != nil {
 		return err
 	}
 
@@ -157,7 +157,7 @@ func (fs *Filesystem) Writefile(p string, r io.Reader) error {
 	sz, err := io.CopyBuffer(file, r, buf)
 
 	// Adjust the disk usage to account for the old size and the new size of the file.
-	fs.addDisk(sz - currentSize)
+	fs.addDisk(int32(sz - currentSize))
 
 	return fs.Chown(cleaned)
 }
@@ -330,7 +330,7 @@ func (fs *Filesystem) Copy(p string) error {
 	}
 
 	// Check that copying this file wouldn't put the server over its limit.
-	if err := fs.HasSpaceFor(s.Size()); err != nil {
+	if err := fs.HasSpaceFor(int32(s.Size())); err != nil {
 		return err
 	}
 
@@ -370,7 +370,7 @@ func (fs *Filesystem) TruncateRootDirectory() error {
 	if err := os.Mkdir(fs.Path(), 0o755); err != nil {
 		return err
 	}
-	atomic.StoreInt64(&fs.diskUsed, 0)
+	atomic.StoreInt32(&fs.diskUsed, 0)
 	return nil
 }
 
@@ -403,7 +403,7 @@ func (fs *Filesystem) Delete(p string) error {
 		}
 	} else {
 		if !st.IsDir() {
-			fs.addDisk(-st.Size())
+			fs.addDisk(int32(-st.Size()))
 		} else {
 			wg.Add(1)
 			go func(wg *sync.WaitGroup, st os.FileInfo, resolved string) {

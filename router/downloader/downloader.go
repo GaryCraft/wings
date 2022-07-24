@@ -171,7 +171,7 @@ func (dl *Download) Execute() error {
 	// even write the whole file before beginning this process. If there is no header present
 	// we'll just have to give it a spin and see how it goes.
 	if res.ContentLength > 0 {
-		if err := dl.server.Filesystem().HasSpaceFor(res.ContentLength); err != nil {
+		if err := dl.server.Filesystem().HasSpaceFor(int32(res.ContentLength)); err != nil {
 			return errors.WrapIf(err, "downloader: failed to write file: not enough space")
 		}
 	}

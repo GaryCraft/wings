@@ -36,13 +36,13 @@ func (ult *usageLookupTime) Get() time.Time {
 }
 
 // Returns the maximum amount of disk space that this Filesystem instance is allowed to use.
-func (fs *Filesystem) MaxDisk() int64 {
-	return atomic.LoadInt64(&fs.diskLimit)
+func (fs *Filesystem) MaxDisk() int32 {
+	return atomic.LoadInt32(&fs.diskLimit)
 }
 
 // Sets the disk space limit for this Filesystem instance.
-func (fs *Filesystem) SetDiskLimit(i int64) {
-	atomic.SwapInt64(&fs.diskLimit, i)
+func (fs *Filesystem) SetDiskLimit(i int32) {
+	atomic.SwapInt32(&fs.diskLimit, i)
 }
 
 // The same concept as HasSpaceAvailable however this will return an error if there is
@@ -83,8 +83,8 @@ func (fs *Filesystem) HasSpaceAvailable(allowStaleValue bool) bool {
 // Returns the cached value for the amount of disk space used by the filesystem. Do not rely on this
 // function for critical logical checks. It should only be used in areas where the actual disk usage
 // does not need to be perfect, e.g. API responses for server resource usage.
-func (fs *Filesystem) CachedUsage() int64 {
-	return atomic.LoadInt64(&fs.diskUsed)
+func (fs *Filesystem) CachedUsage() int32 {
+	return atomic.LoadInt32(&fs.diskUsed)
 }
 
 // Internal helper function to allow other parts of the codebase to check the total used disk space
@@ -98,7 +98,7 @@ func (fs *Filesystem) CachedUsage() int64 {
 //
 // This is primarily to avoid a bunch of I/O operations from piling up on the server, especially on servers
 // with a large amount of files.
-func (fs *Filesystem) DiskUsage(allowStaleValue bool) (int64, error) {
+func (fs *Filesystem) DiskUsage(allowStaleValue bool) (int32, error) {
 	// A disk check interval of 0 means this functionality is completely disabled.
 	if fs.diskCheckInterval == 0 {
 		return 0, nil
@@ -121,11 +121,11 @@ func (fs *Filesystem) DiskUsage(allowStaleValue bool) (int64, error) {
 	}
 
 	// Return the currently cached value back to the calling function.
-	return atomic.LoadInt64(&fs.diskUsed), nil
+	return atomic.LoadInt32(&fs.diskUsed), nil
 }
 
 // Updates the currently used disk space for a server.
-func (fs *Filesystem) updateCachedDiskUsage() (int64, error) {
+func (fs *Filesystem) updateCachedDiskUsage() (int32, error) {
 	// Obtain an exclusive lock on this process so that we don't unintentionally run it at the same
 	// time as another running process. Once the lock is available it'll read from the cache for the
 	// second call rather than hitting the disk in parallel.
@@ -149,7 +149,7 @@ func (fs *Filesystem) updateCachedDiskUsage() (int64, error) {
 	// error encountered.
 	fs.lastLookupTime.Set(time.Now())
 
-	atomic.StoreInt64(&fs.diskUsed, size)
+	atomic.StoreInt32(&fs.diskUsed, size)
 
 	return size, err
 }
@@ -157,13 +157,13 @@ func (fs *Filesystem) updateCachedDiskUsage() (int64, error) {
 // Determines the directory size of a given location by running parallel tasks to iterate
 // through all of the folders. Returns the size in bytes. This can be a fairly taxing operation
 // on locations with tons of files, so it is recommended that you cache the output.
-func (fs *Filesystem) DirectorySize(dir string) (int64, error) {
+func (fs *Filesystem) DirectorySize(dir string) (int32, error) {
 	d, err := fs.SafePath(dir)
 	if err != nil {
 		return 0, err
 	}
 
-	var size int64
+	var size int32
 	var st syscall.Stat_t
 
 	err = godirwalk.Walk(d, &godirwalk.Options{
@@ -184,7 +184,7 @@ func (fs *Filesystem) DirectorySize(dir string) (int64, error) {
 
 			if !e.IsDir() {
 				syscall.Lstat(p, &st)
-				atomic.AddInt64(&size, st.Size)
+				atomic.AddInt32(&size, int32(st.Size))
 			}
 
 			return nil
@@ -197,7 +197,7 @@ func (fs *Filesystem) DirectorySize(dir string) (int64, error) {
 // Helper function to determine if a server has space available for a file of a given size.
 // If space is available, no error will be returned, otherwise an ErrNotEnoughSpace error
 // will be raised.
-func (fs *Filesystem) HasSpaceFor(size int64) error {
+func (fs *Filesystem) HasSpaceFor(size int32) error {
 	if fs.MaxDisk() == 0 {
 		return nil
 	}
@@ -212,8 +212,8 @@ func (fs *Filesystem) HasSpaceFor(size int64) error {
 }
 
 // Updates the disk usage for the Filesystem instance.
-func (fs *Filesystem) addDisk(i int64) int64 {
-	size := atomic.LoadInt64(&fs.diskUsed)
+func (fs *Filesystem) addDisk(i int32) int32 {
+	size := atomic.LoadInt32(&fs.diskUsed)
 
 	// Sorry go gods. This is ugly but the best approach I can come up with for right
 	// now without completely re-evaluating the logic we use for determining disk space.
@@ -229,8 +229,8 @@ func (fs *Filesystem) addDisk(i int64) int64 {
 
 	// If we're dropping below 0 somehow just cap it to 0.
 	if (size + i) < 0 {
-		return atomic.SwapInt64(&fs.diskUsed, 0)
+		return atomic.SwapInt32(&fs.diskUsed, 0)
 	}
 
-	return atomic.AddInt64(&fs.diskUsed, i)
+	return atomic.AddInt32(&fs.diskUsed, i)
 }

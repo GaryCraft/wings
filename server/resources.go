@@ -23,7 +23,7 @@ type ResourceUsage struct {
 	// The current disk space being used by the server. This value is not guaranteed to be accurate
 	// at all times. It is "manually" set whenever server.Proc() is called. This is kind of just a
 	// hacky solution for now to avoid passing events all over the place.
-	Disk int64 `json:"disk_bytes"`
+	Disk int32 `json:"disk_bytes"`
 }
 
 // Proc returns the current resource usage stats for the server instance. This returns
@@ -33,7 +33,7 @@ func (s *Server) Proc() ResourceUsage {
 	s.resources.mu.Lock()
 	defer s.resources.mu.Unlock()
 	// Store the updated disk usage when requesting process usage.
-	atomic.StoreInt64(&s.resources.Disk, s.Filesystem().CachedUsage())
+	atomic.StoreInt32(&s.resources.Disk, s.Filesystem().CachedUsage())
 	//goland:noinspection GoVetCopyLock
 	return s.resources
 }

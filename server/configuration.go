@@ -58,7 +58,7 @@ func (s *Server) Config() *Configuration {
 }
 
 // DiskSpace returns the amount of disk space available to a server in bytes.
-func (s *Server) DiskSpace() int64 {
+func (s *Server) DiskSpace() int32 {
 	s.cfg.mu.RLock()
 	defer s.cfg.mu.RUnlock()
 	return s.cfg.Build.DiskSpace * 1024.0 * 1024.0

@@ -47,8 +47,8 @@ func TestFilesystem_DecompressFile(t *testing.T) {
 
 		g.AfterEach(func() {
 			rfs.reset()
-			atomic.StoreInt64(&fs.diskUsed, 0)
-			atomic.StoreInt64(&fs.diskLimit, 0)
+			atomic.StoreInt32(&fs.diskUsed, 0)
+			atomic.StoreInt32(&fs.diskLimit, 0)
 		})
 	})
 }

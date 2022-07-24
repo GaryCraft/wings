@@ -5,8 +5,6 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"fmt"
-	gzip2 "github.com/klauspost/compress/gzip"
-	zip2 "github.com/klauspost/compress/zip"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	gzip2 "github.com/klauspost/compress/gzip"
+	zip2 "github.com/klauspost/compress/zip"
 
 	"emperror.dev/errors"
 	"github.com/mholt/archiver/v3"
@@ -60,12 +61,12 @@ func (fs *Filesystem) CompressFiles(dir string, paths []string) (os.FileInfo, er
 		return nil, err
 	}
 
-	if err := fs.HasSpaceFor(f.Size()); err != nil {
+	if err := fs.HasSpaceFor(int32(f.Size())); err != nil {
 		_ = os.Remove(d)
 		return nil, err
 	}
 
-	fs.addDisk(f.Size())
+	fs.addDisk(int32(f.Size()))
 
 	return f, nil
 }
@@ -88,10 +89,10 @@ func (fs *Filesystem) SpaceAvailableForDecompression(dir string, file string) er
 	// waiting an unnecessary amount of time on this call.
 	dirSize, err := fs.DiskUsage(false)
 
-	var size int64
+	var size int32
 	// Walk over the archive and figure out just how large the final output would be from unarchiving it.
 	err = archiver.Walk(source, func(f archiver.File) error {
-		if atomic.AddInt64(&size, f.Size())+dirSize > fs.MaxDisk() {
+		if atomic.AddInt32(&size, int32(f.Size()))+int32(dirSize) > fs.MaxDisk() {
 			return newFilesystemError(ErrCodeDiskSpace, nil)
 		}
 		return nil

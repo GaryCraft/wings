@@ -96,7 +96,7 @@ func TestFilesystem_Writefile(t *testing.T) {
 		g.It("can create a new file", func() {
 			r := bytes.NewReader([]byte("test file content"))
 
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(int64(0))
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(int64(0))
 
 			err := fs.Writefile("test.txt", r)
 			g.Assert(err).IsNil()
@@ -105,7 +105,7 @@ func TestFilesystem_Writefile(t *testing.T) {
 			g.Assert(err).IsNil()
 			defer f.Close()
 			g.Assert(getFileContent(f)).Equal("test file content")
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(r.Size())
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(r.Size())
 		})
 
 		g.It("can create a new file inside a nested directory with leading slash", func() {
@@ -141,7 +141,7 @@ func TestFilesystem_Writefile(t *testing.T) {
 		})
 
 		g.It("cannot write a file that exceeds the disk limits", func() {
-			atomic.StoreInt64(&fs.diskLimit, 1024)
+			atomic.StoreInt32(&fs.diskLimit, 1024)
 
 			b := make([]byte, 1025)
 			_, err := rand.Read(b)
@@ -173,8 +173,8 @@ func TestFilesystem_Writefile(t *testing.T) {
 			buf.Truncate(0)
 			rfs.reset()
 
-			atomic.StoreInt64(&fs.diskUsed, 0)
-			atomic.StoreInt64(&fs.diskLimit, 0)
+			atomic.StoreInt32(&fs.diskUsed, 0)
+			atomic.StoreInt32(&fs.diskLimit, 0)
 		})
 	})
 }
@@ -213,7 +213,7 @@ func TestFilesystem_CreateDirectory(t *testing.T) {
 		g.It("should not increment the disk usage", func() {
 			err := fs.CreateDirectory("test", "/")
 			g.Assert(err).IsNil()
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(int64(0))
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(int32(0))
 		})
 
 		g.AfterEach(func() {
@@ -329,7 +329,7 @@ func TestFilesystem_Copy(t *testing.T) {
 				panic(err)
 			}
 
-			atomic.StoreInt64(&fs.diskUsed, int64(utf8.RuneCountInString("test content")))
+			atomic.StoreInt32(&fs.diskUsed, int32(utf8.RuneCountInString("test content")))
 		})
 
 		g.It("should return an error if the source does not exist", func() {
@@ -372,7 +372,7 @@ func TestFilesystem_Copy(t *testing.T) {
 		})
 
 		g.It("should return an error if there is not space to copy the file", func() {
-			atomic.StoreInt64(&fs.diskLimit, 2)
+			atomic.StoreInt32(&fs.diskLimit, 2)
 
 			err := fs.Copy("source.txt")
 			g.Assert(err).IsNotNil()
@@ -404,7 +404,7 @@ func TestFilesystem_Copy(t *testing.T) {
 				g.Assert(err).IsNil()
 			}
 
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(int64(utf8.RuneCountInString("test content")) * 3)
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(int32(utf8.RuneCountInString("test content")) * 3)
 		})
 
 		g.It("should create a copy inside of a directory", func() {
@@ -427,8 +427,8 @@ func TestFilesystem_Copy(t *testing.T) {
 		g.AfterEach(func() {
 			rfs.reset()
 
-			atomic.StoreInt64(&fs.diskUsed, 0)
-			atomic.StoreInt64(&fs.diskLimit, 0)
+			atomic.StoreInt32(&fs.diskUsed, 0)
+			atomic.StoreInt32(&fs.diskLimit, 0)
 		})
 	})
 }
@@ -443,7 +443,7 @@ func TestFilesystem_Delete(t *testing.T) {
 				panic(err)
 			}
 
-			atomic.StoreInt64(&fs.diskUsed, int64(utf8.RuneCountInString("test content")))
+			atomic.StoreInt32(&fs.diskUsed, int32(utf8.RuneCountInString("test content")))
 		})
 
 		g.It("does not delete files outside the root directory", func() {
@@ -477,7 +477,7 @@ func TestFilesystem_Delete(t *testing.T) {
 			g.Assert(err).IsNotNil()
 			g.Assert(errors.Is(err, os.ErrNotExist)).IsTrue()
 
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(int64(0))
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(int32(0))
 		})
 
 		g.It("deletes all items inside a directory if the directory is deleted", func() {
@@ -495,11 +495,11 @@ func TestFilesystem_Delete(t *testing.T) {
 				g.Assert(err).IsNil()
 			}
 
-			atomic.StoreInt64(&fs.diskUsed, int64(utf8.RuneCountInString("test content")*3))
+			atomic.StoreInt32(&fs.diskUsed, int32(utf8.RuneCountInString("test content")*3))
 
 			err = fs.Delete("foo")
 			g.Assert(err).IsNil()
-			g.Assert(atomic.LoadInt64(&fs.diskUsed)).Equal(int64(0))
+			g.Assert(atomic.LoadInt32(&fs.diskUsed)).Equal(int32(0))
 
 			for _, s := range sources {
 				_, err = rfs.StatServerFile(s)
@@ -511,8 +511,8 @@ func TestFilesystem_Delete(t *testing.T) {
 		g.AfterEach(func() {
 			rfs.reset()
 
-			atomic.StoreInt64(&fs.diskUsed, 0)
-			atomic.StoreInt64(&fs.diskLimit, 0)
+			atomic.StoreInt32(&fs.diskUsed, 0)
+			atomic.StoreInt32(&fs.diskLimit, 0)
 		})
 	})
 }

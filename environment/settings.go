@@ -51,7 +51,7 @@ type Limits struct {
 	CpuLimit int64 `json:"cpu_limit"`
 
 	// The amount of disk space in megabytes that a server is allowed to use.
-	DiskSpace int64 `json:"disk_space"`
+	DiskSpace int32 `json:"disk_space"`
 
 	// Sets which CPU threads can be used by the docker instance.
 	Threads string `json:"threads"`
