@@ -2,11 +2,10 @@ package remote
 
 import (
 	"bytes"
-	"regexp"
-	"strings"
-
 	"github.com/apex/log"
 	"github.com/goccy/go-json"
+	"regexp"
+	"strings"
 
 	"github.com/pterodactyl/wings/parser"
 )
@@ -87,6 +86,7 @@ type SftpAuthRequest struct {
 // user for the SFTP subsystem.
 type SftpAuthResponse struct {
 	Server      string   `json:"server"`
+	User        string   `json:"user"`
 	Permissions []string `json:"permissions"`
 }
 
